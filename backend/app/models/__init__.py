@@ -13,13 +13,35 @@ from app.models.normalized import (
     Severity,
     Source,
 )
+from app.models.unified import (
+    ConflictKind,
+    MatchConfidence,
+    MatchEvidence,
+    MatchSignal,
+    Origin,
+    ProvenanceField,
+    SourceValue,
+    SyncResult,
+    SyncRunSummary,
+    UnifiedMeeting,
+)
 
 __all__ = [
+    "ConflictKind",
     "DataQualityFlag",
     "FlagCode",
+    "MatchConfidence",
+    "MatchEvidence",
+    "MatchSignal",
     "MeetingStatus",
     "NormalizedEvent",
+    "Origin",
     "Participant",
+    "ProvenanceField",
     "Severity",
     "Source",
+    "SourceValue",
+    "SyncResult",
+    "SyncRunSummary",
+    "UnifiedMeeting",
 ]
