@@ -38,8 +38,13 @@ The party representation gap is the important one: CRM stores `"David Park"` whi
 | `CRM-1007` | `meeting_time` is `null` | Its counterpart `CAL-A8` supplies 15:00. |
 | `CRM-1006`, `CRM-1009`, `CRM-1013`, `CRM-1019` | `client_name`, `client_company` | All four have `meeting_type: "Internal"`. This is not corruption — internal meetings legitimately have no client. |
 | `CRM-1003`, `CRM-1007`, `CRM-1014`, `CRM-1018` | `location` is `null` | |
+| `CRM-1010` | `notes` is `""` | The only **empty string** in either file — every other gap is `null`. Kept distinct: "nothing was typed" and "never populated" are different facts. Found while writing the ingest tests, after this document was first drafted. |
 | `CAL-A11` | `attendees` empty, `location` and `description` null | The thinnest record in either file. |
 | `CAL-A15` | `location` is `null` | |
+
+Every record in both files carries every key — the gaps are always null/empty *values*, never
+absent fields. `backend/tests/test_ingest.py` pins this table exactly, so a new kind of gap fails a
+test rather than reaching the matcher unnoticed.
 
 ### C. Intra-source duplicate
 
