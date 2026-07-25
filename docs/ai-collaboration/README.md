@@ -29,6 +29,8 @@ where I chose to *not* resolve something automatically.
    precedence rules, and the alternatives I rejected with reasons.
 3. **[03-architecture.md](03-architecture.md)** — stack, module layout, the in-process data model, and
    how the "single command" requirement is satisfied.
+4. **[04-implementation-plan.md](04-implementation-plan.md)** — the ordered build steps, each scoped
+   to a few files and paired with the manual check that has to pass before the next one starts.
 
 ## A note on verification
 
