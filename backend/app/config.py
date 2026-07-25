@@ -1,7 +1,7 @@
 """Application settings.
 
 Everything environment-dependent lives here, so no other module hard-codes a path or a
-timezone. `data_dir` is a setting rather than a constant because step 25 mounts the source
+timezone. `data_dir` is a setting rather than a constant because step 26 mounts the source
 files at a different path inside the container.
 """
 

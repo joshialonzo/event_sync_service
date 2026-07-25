@@ -58,5 +58,5 @@ DATA_DIR=/tmp uvicorn app.main:app --port 8000
 
 - `parents[2]` from `backend/app/config.py` is the repo root: `app` → `backend` → root. Verify by
   printing it rather than trusting the count.
-- Keeping `data_dir` in settings is what lets step 25 mount the directory at a different path inside
+- Keeping `data_dir` in settings is what lets step 26 mount the directory at a different path inside
   the container without touching code.

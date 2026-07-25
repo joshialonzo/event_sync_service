@@ -26,38 +26,54 @@ uvicorn app.main:app --reload --port 8000
 
 ## Index
 
-| # | Step | Phase |
-|---|---|---|
-| [01](01-fastapi-app-boots.md) | FastAPI app boots | Skeleton |
-| [02](02-settings.md) | Settings | Skeleton |
-| [03](03-raw-loaders.md) | Raw JSON loaders | Skeleton |
-| [04](04-normalized-models.md) | Normalized models | Models |
-| [05](05-unified-models.md) | Unified models | Models |
-| [06](06-parsing-primitives.md) | Parsing primitives | Normalize |
-| [07](07-crm-normalizer.md) | CRM normalizer | Normalize |
-| [08](08-calendar-normalizer.md) | Calendar normalizer | Normalize |
-| [09](09-dedupe.md) | Intra-source dedupe | Reconcile |
-| [10](10-match-signals.md) | Match signals | Reconcile |
-| [11](11-matcher.md) | Matcher — correctness fixture | Reconcile |
-| [12](12-merge.md) | Merge with provenance | Reconcile |
-| [13](13-repository.md) | Repository | Store |
-| [14](14-sync-job.md) | Sync job | Store |
-| [15](15-sync-on-startup.md) | Sync on startup | Store |
-| [16](16-api-list-detail.md) | API list and detail | JSON API |
-| [17](17-api-filters.md) | API filters | JSON API |
-| [18](18-api-stats-sync.md) | Stats and re-sync endpoints | JSON API |
-| [19](19-template-plumbing.md) | Template plumbing | UI |
-| [20](20-meeting-list-page.md) | Meeting list page | UI |
-| [21](21-filter-controls.md) | Filter controls | UI |
-| [22](22-detail-page.md) | Detail page | UI |
-| [23](23-stats-page.md) | Sync overview page | UI |
-| [24](24-resync-from-ui.md) | Re-sync from the UI | UI |
-| [25](25-container.md) | Container and single command | Ship |
-| [26](26-reconcile-docs.md) | Reconcile the docs | Ship |
-| [27](27-readme.md) | Project README | Ship |
+| # | Step | Phase | Status |
+|---|---|---|---|
+| [01](01-fastapi-app-boots.md) | FastAPI app boots | Skeleton | ✅ done |
+| [02](02-settings.md) | Settings | Skeleton | ✅ done |
+| [03](03-test-harness.md) | Test harness — pytest, unit + integration | Skeleton | next |
+| [04](04-raw-loaders.md) | Raw JSON loaders | Skeleton | |
+| 05 | Normalized models | Models | |
+| 06 | Unified models | Models | |
+| 07 | Parsing primitives | Normalize | |
+| 08 | CRM normalizer | Normalize | |
+| 09 | Calendar normalizer | Normalize | |
+| 10 | Intra-source dedupe | Reconcile | |
+| 11 | Match signals | Reconcile | |
+| 12 | Matcher — correctness fixture | Reconcile | |
+| 13 | Merge with provenance | Reconcile | |
+| 14 | Repository | Store | |
+| 15 | Sync job | Store | |
+| 16 | Sync on startup | Store | |
+| 17 | API list and detail | JSON API | |
+| 18 | API filters | JSON API | |
+| 19 | Stats and re-sync endpoints | JSON API | |
+| 20 | Template plumbing | UI | |
+| 21 | Meeting list page | UI | |
+| 22 | Filter controls | UI | |
+| 23 | Detail page | UI | |
+| 24 | Sync overview page | UI | |
+| 25 | Re-sync from the UI | UI | |
+| 26 | Container and single command | Ship | |
+| 27 | Reconcile the docs | Ship | |
+| 28 | Project README | Ship | |
+
+Only written-up steps are linked. The rest are written just before they're built, so each one can
+describe what the code actually turned out to be — see
+[04-implementation-plan.md](../docs/ai-collaboration/04-implementation-plan.md) for their scope.
+
+## Running the tests
+
+From `backend/`, once step 03 is in place:
+
+```bash
+pytest -q          # the suite
+pytest -v          # with test names
+```
+
+From step 04 on, every step adds its own test module and the suite must stay green.
 
 ## Invariants — re-check after every step
 
-1. `pytest` is green; the 17-pair fixture (step 11) never regresses.
+1. `pytest` is green; the 17-pair fixture (step 12) never regresses.
 2. 42 records in, 24 meetings out. Nothing is ever dropped.
 3. Templates read through the repository, never over HTTP.
