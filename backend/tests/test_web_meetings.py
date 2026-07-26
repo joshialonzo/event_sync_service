@@ -61,12 +61,17 @@ def test_origin_badges_match_the_api_counts(client: TestClient) -> None:
 
 
 def test_origin_labels_are_readable(client: TestClient) -> None:
-    """"crm_only" is a wire format, not something to show a salesperson."""
-    html = client.get("/").text
+    """"crm_only" is a wire format, not something to show a salesperson.
 
-    assert "CRM only" in html
-    assert "Calendar only" in html
-    assert "crm_only" not in html
+    Scoped to the table body: the filter form (step 22) legitimately carries the raw value
+    in its `<option value="crm_only">`, because that is what goes into the URL.
+    """
+    html = client.get("/").text
+    table = html.split("<tbody>", 1)[1].split("</tbody>", 1)[0]
+
+    assert "CRM only" in table
+    assert "Calendar only" in table
+    assert "crm_only" not in table
 
 
 # --- conflict badge ---

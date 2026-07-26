@@ -7,10 +7,70 @@
 
 {% block content %}
   <h1>Meetings</h1>
+
+  {# A plain GET form: the URL is the state, so a filtered view is bookmarkable, survives a
+     reload, and the back button works. Every control re-renders its current value — a form
+     that filters but comes back blank hides what was asked for and silently drops it on the
+     next submission. #}
+  <form class="filters" method="get" action="{{ url_for('meetings_page') }}">
+    <div>
+      <label for="origin">Source</label>
+      <select id="origin" name="origin">
+        <option value="">Any</option>
+        {% for value, label in origin_labels.items() %}
+          <option value="{{ value }}"{{ ' selected' if filters.origin and filters.origin.value == value }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label for="has_conflicts">Conflicts</label>
+      {# Tri-state, so a select rather than a checkbox: without the empty default there is
+         no way to ask for "meetings where the sources agree". #}
+      <select id="has_conflicts" name="has_conflicts">
+        <option value="">Any</option>
+        <option value="true"{{ ' selected' if filters.has_conflicts is true }}>Only conflicts</option>
+        <option value="false"{{ ' selected' if filters.has_conflicts is false }}>No conflicts</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="date_from">From</label>
+      <input type="date" id="date_from" name="date_from" value="{{ filters.date_from or '' }}">
+    </div>
+
+    <div>
+      <label for="date_to">To</label>
+      <input type="date" id="date_to" name="date_to" value="{{ filters.date_to or '' }}">
+    </div>
+
+    <div>
+      <label for="owner">Owner</label>
+      <input type="search" id="owner" name="owner" placeholder="name or email"
+             value="{{ filters.owner or '' }}">
+    </div>
+
+    <button type="submit">Filter</button>
+    {% if is_filtered %}
+      <a class="badge badge-info" href="{{ url_for('meetings_page') }}">Clear</a>
+    {% endif %}
+  </form>
+
   <p class="lede">
-    {{ meeting_count }} reconciled meeting{{ '' if meeting_count == 1 else 's' }},
-    earliest first.
+    {% if is_filtered %}
+      {{ meeting_count }} of {{ total_count }} meetings match.
+    {% else %}
+      {{ meeting_count }} reconciled meeting{{ '' if meeting_count == 1 else 's' }},
+      earliest first.
+    {% endif %}
   </p>
+
+  {% if not meetings %}
+    <p class="panel placeholder">
+      No meetings match these filters.
+      <a href="{{ url_for('meetings_page') }}">Clear them</a> to see all {{ total_count }}.
+    </p>
+  {% else %}
 
   <table>
     <thead>
@@ -68,4 +128,5 @@
       {% endfor %}
     </tbody>
   </table>
+  {% endif %}
 {% endblock %}
