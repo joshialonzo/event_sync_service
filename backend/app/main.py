@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 
+from app.api.routes import router as api_router
 from app.config import get_settings
 from app.dependencies import get_repository, sync_now
 from app.repository import Repository
@@ -33,6 +34,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Event Sync Service", version="0.1.0", lifespan=lifespan)
+app.include_router(api_router)
 
 
 @app.get("/api/health")
