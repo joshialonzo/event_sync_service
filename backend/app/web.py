@@ -28,9 +28,17 @@ router = APIRouter(tags=["pages"], include_in_schema=False)
 def meetings_page(
     request: Request, repository: Repository = Depends(get_repository)
 ) -> HTMLResponse:
-    """The meeting list. Step 21 fills in the table; this step proves the layout renders."""
+    """The meeting list, in the store's date order.
+
+    The template receives the meetings themselves rather than a flattened view model: every
+    display decision it makes — the origin badge, the conflict badge, the quality severity —
+    is already a property of the data, and pre-chewing it here would be a second place for
+    those answers to differ from the JSON API's.
+    """
+    meetings = repository.list_meetings()
+
     return templates.TemplateResponse(
         request=request,
         name="meetings.html",
-        context={"meeting_count": len(repository.list_meetings())},
+        context={"meetings": meetings, "meeting_count": len(meetings)},
     )

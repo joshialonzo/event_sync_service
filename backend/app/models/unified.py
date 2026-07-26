@@ -14,7 +14,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, computed_field, model_validator
 
-from app.models.normalized import DataQualityFlag, Source
+from app.models.normalized import DataQualityFlag, Severity, Source
 
 # Signal weights are only compared against this when checking the arithmetic; floating
 # point sums of four products do not land exactly.
@@ -228,6 +228,21 @@ class UnifiedMeeting(BaseModel):
     @property
     def source_ids(self) -> list[str]:
         return [*self.crm_ids, *self.calendar_ids]
+
+    @property
+    def worst_flag_severity(self) -> Severity | None:
+        """The most serious data-quality flag on this meeting, or None if it is clean.
+
+        A property rather than template logic: "which badge does this row get?" is a
+        question about the data, and every page that shows a quality indicator should
+        answer it the same way.
+        """
+        if not self.flags:
+            return None
+
+        order = (Severity.ERROR, Severity.WARNING, Severity.INFO)
+        present = {flag.severity for flag in self.flags}
+        return next(severity for severity in order if severity in present)
 
 
 class SyncRunSummary(BaseModel):

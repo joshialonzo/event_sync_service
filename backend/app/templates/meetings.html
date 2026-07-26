@@ -2,10 +2,70 @@
 
 {% block title %}Meetings — Event Sync{% endblock %}
 
+{% set origin_labels = {'both': 'Both', 'crm_only': 'CRM only', 'calendar_only': 'Calendar only'} %}
+{% set origin_classes = {'both': 'badge-both', 'crm_only': 'badge-crm', 'calendar_only': 'badge-calendar'} %}
+
 {% block content %}
   <h1>Meetings</h1>
   <p class="lede">
-    {{ meeting_count }} reconciled meeting{{ '' if meeting_count == 1 else 's' }}.
+    {{ meeting_count }} reconciled meeting{{ '' if meeting_count == 1 else 's' }},
+    earliest first.
   </p>
-  <p class="placeholder">The table lands in step 21.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Date</th>
+        <th scope="col">Time</th>
+        <th scope="col">Meeting</th>
+        <th scope="col">Owner</th>
+        <th scope="col">Source</th>
+        <th scope="col">Signals</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for meeting in meetings %}
+        <tr>
+          <td class="date">{{ meeting.event_date }}</td>
+          <td class="date">
+            {# CRM-1007 has no time of its own; the calendar supplied one. A meeting with
+               neither shows an em dash rather than a misleading midnight. #}
+            {{ meeting.start.strftime('%H:%M') if meeting.start else '—' }}
+          </td>
+          <td>
+            <a href="/meetings/{{ meeting.id }}">{{ meeting.title.value or meeting.id }}</a>
+            {% if meeting.client_name.value %}
+              <div class="alternative">{{ meeting.client_name.value }}</div>
+            {% endif %}
+          </td>
+          <td>{{ meeting.owner_name.value or '—' }}</td>
+          <td>
+            <span class="badge {{ origin_classes[meeting.origin.value] }}">
+              {{ origin_labels[meeting.origin.value] }}
+            </span>
+          </td>
+          <td>
+            {# Only contradictions raise this badge. Granularity and absence differences are
+               shown on the detail page, where there is room to explain them — badging all of
+               them would put a warning on nearly every row and teach the reader to ignore it. #}
+            {% if meeting.has_conflicts %}
+              <span class="badge badge-conflict"
+                    title="Sources disagree on: {{ meeting.conflicting_fields | join(', ') }}">
+                Conflict
+              </span>
+            {% endif %}
+
+            {# Every meeting carries at least one flag, so this shows the worst severity
+               rather than a count: 20 rows reading "3" is noise, one reading "error" is not. #}
+            {% if meeting.worst_flag_severity %}
+              <span class="badge badge-{{ meeting.worst_flag_severity.value }}"
+                    title="{{ meeting.flags | length }} data-quality flag(s)">
+                {{ meeting.worst_flag_severity.value }}
+              </span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 {% endblock %}
