@@ -59,6 +59,7 @@ class FlagCode(str, Enum):
     NON_EMAIL_ATTENDEE = "NON_EMAIL_ATTENDEE"
     INTERNAL_NO_CLIENT = "INTERNAL_NO_CLIENT"
     PLACEHOLDER_CLIENT = "PLACEHOLDER_CLIENT"
+    DUPLICATE_COLLAPSED = "DUPLICATE_COLLAPSED"
     UNKNOWN_STATUS = "UNKNOWN_STATUS"
 
     @property
@@ -85,6 +86,7 @@ _SEVERITY_BY_CODE: dict[FlagCode, Severity] = {
     FlagCode.NON_EMAIL_ATTENDEE: Severity.INFO,
     FlagCode.INTERNAL_NO_CLIENT: Severity.INFO,
     FlagCode.PLACEHOLDER_CLIENT: Severity.INFO,
+    FlagCode.DUPLICATE_COLLAPSED: Severity.INFO,
     FlagCode.UNKNOWN_STATUS: Severity.WARNING,
 }
 
@@ -98,6 +100,7 @@ _DESCRIPTION_BY_CODE: dict[FlagCode, str] = {
     FlagCode.NON_EMAIL_ATTENDEE: "Attendee is not an email address",
     FlagCode.INTERNAL_NO_CLIENT: "Internal meeting with no client (expected)",
     FlagCode.PLACEHOLDER_CLIENT: "Client field holds a placeholder, not a single client",
+    FlagCode.DUPLICATE_COLLAPSED: "Entered twice in the source; records were merged",
     FlagCode.UNKNOWN_STATUS: "Status is outside both source vocabularies",
 }
 
@@ -187,6 +190,13 @@ class NormalizedEvent(BaseModel):
     flags: list[DataQualityFlag] = Field(default_factory=list)
     raw: dict
 
+    duplicates: list[dict] = Field(default_factory=list)
+    """Raw records of same-source duplicates collapsed into this one (step 10).
+
+    Kept so the detail view can show every record the source actually held. `raw` remains
+    the canonical survivor's own record.
+    """
+
     @model_validator(mode="after")
     def _date_agrees_with_start(self) -> "NormalizedEvent":
         """Keep `event_date` and `start` from disagreeing.
@@ -218,6 +228,11 @@ class NormalizedEvent(BaseModel):
     @property
     def flag_codes(self) -> set[FlagCode]:
         return {flag.code for flag in self.flags}
+
+    @property
+    def raw_records(self) -> list[dict]:
+        """Every source record behind this event — the survivor's, then any duplicates'."""
+        return [self.raw, *self.duplicates]
 
     def add_flag(
         self,

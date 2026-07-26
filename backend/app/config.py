@@ -24,6 +24,15 @@ class Settings(BaseSettings):
     timezone: str = "America/New_York"
     """The single timezone every timestamp is coerced to (doc 02, Decision 1)."""
 
+    internal_domain: str = "firma.com"
+    """The firm's own email domain.
+
+    Every organizer in the calendar file uses it, so it is what separates colleagues from
+    clients. Dedupe requires an overlapping *client* participant (step 10) and the matcher
+    scores client overlap separately from internal attendees (step 11); both would be wrong
+    if internal staff counted as evidence that two records describe the same client meeting.
+    """
+
     @field_validator("data_dir")
     @classmethod
     def _absolute(cls, value: Path) -> Path:
