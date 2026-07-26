@@ -30,47 +30,46 @@ uvicorn app.main:app --reload --port 8000
 |---|---|---|---|
 | [01](01-fastapi-app-boots.md) | FastAPI app boots | Skeleton | ✅ done |
 | [02](02-settings.md) | Settings | Skeleton | ✅ done |
-| [03](03-test-harness.md) | Test harness — pytest, unit + integration | Skeleton | next |
-| [04](04-raw-loaders.md) | Raw JSON loaders | Skeleton | |
-| 05 | Normalized models | Models | |
-| 06 | Unified models | Models | |
-| 07 | Parsing primitives | Normalize | |
-| 08 | CRM normalizer | Normalize | |
-| 09 | Calendar normalizer | Normalize | |
-| 10 | Intra-source dedupe | Reconcile | |
-| 11 | Match signals | Reconcile | |
-| 12 | Matcher — correctness fixture | Reconcile | |
-| 13 | Merge with provenance | Reconcile | |
-| 14 | Repository | Store | |
-| 15 | Sync job | Store | |
-| 16 | Sync on startup | Store | |
-| 17 | API list and detail | JSON API | |
-| 18 | API filters | JSON API | |
-| 19 | Stats and re-sync endpoints | JSON API | |
-| 20 | Template plumbing | UI | |
-| 21 | Meeting list page | UI | |
-| 22 | Filter controls | UI | |
-| 23 | Detail page | UI | |
-| 24 | Sync overview page | UI | |
-| 25 | Re-sync from the UI | UI | |
-| 26 | Container and single command | Ship | |
-| 27 | Reconcile the docs | Ship | |
-| 28 | Project README | Ship | |
+| [03](03-test-harness.md) | Test harness — pytest, unit + integration | Skeleton | ✅ done |
+| [04](04-raw-loaders.md) | Raw JSON loaders | Skeleton | ✅ done |
+| [05](05-normalized-models.md) | Normalized models | Models | ✅ done |
+| [06](06-unified-models.md) | Unified models | Models | ✅ done |
+| [07](07-parsing-primitives.md) | Parsing primitives | Normalize | ✅ done |
+| [08](08-crm-normalizer.md) | CRM normalizer | Normalize | ✅ done |
+| [09](09-calendar-normalizer.md) | Calendar normalizer | Normalize | ✅ done |
+| [10](10-dedupe.md) | Intra-source dedupe | Reconcile | ✅ done |
+| [11](11-match-signals.md) | Match signals | Reconcile | ✅ done |
+| [12](12-matcher.md) | Matcher — correctness fixture | Reconcile | ✅ done |
+| [13](13-merge.md) | Merge with provenance | Reconcile | ✅ done |
+| [14](14-repository.md) | Repository | Store | ✅ done |
+| [15](15-sync-job.md) | Sync job | Store | ✅ done |
+| [16](16-sync-on-startup.md) | Sync on startup | Store | ✅ done |
+| [17](17-api-list-detail.md) | API list and detail | JSON API | ✅ done |
+| [18](18-api-filters.md) | API filters | JSON API | ✅ done |
+| [19](19-api-stats-sync.md) | Stats and re-sync endpoints | JSON API | ✅ done |
+| [20](20-template-plumbing.md) | Template plumbing | UI | ✅ done |
+| [21](21-meeting-list-page.md) | Meeting list page | UI | ✅ done |
+| [22](22-filter-controls.md) | Filter controls | UI | ✅ done |
+| [23](23-detail-page.md) | Detail page | UI | ✅ done |
+| [24](24-stats-page.md) | Sync overview page | UI | ✅ done |
+| [25](25-resync-from-ui.md) | Re-sync from the UI | UI | ✅ done |
+| [26](26-container.md) | Container and single command | Ship | ✅ done |
+| [27](27-reconcile-the-docs.md) | Reconcile the docs | Ship | ✅ done |
+| [28](28-readme.md) | Project README | Ship | ✅ done |
 
-Only written-up steps are linked. The rest are written just before they're built, so each one can
-describe what the code actually turned out to be — see
-[04-implementation-plan.md](../docs/ai-collaboration/04-implementation-plan.md) for their scope.
+All 28 are done. Each file was written just before its step was built, so it describes what the code
+actually turned out to be — including the places where the plan met the real data and lost.
 
 ## Running the tests
 
-From `backend/`, once step 03 is in place:
+From `backend/`:
 
 ```bash
-pytest -q          # the suite
+pytest             # 582 tests, ~2 seconds
 pytest -v          # with test names
 ```
 
-From step 04 on, every step adds its own test module and the suite must stay green.
+Every step from 04 on added its own test module, and the suite stayed green throughout.
 
 ## Invariants — re-check after every step
 
