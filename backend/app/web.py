@@ -5,15 +5,16 @@ argument for templates over a separate frontend: `/` and `/api/meetings` cannot 
 about a record because there is one code path to the data.
 """
 
+import logging
 from datetime import date
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
-from app.dependencies import get_repository
+from app.dependencies import get_repository, sync_now
 from app.models.filters import MeetingFilters, apply_filters
 from app.models.unified import Origin
 from app.repository import Repository
@@ -24,6 +25,8 @@ STATIC_DIR = Path(__file__).parent / "static"
 # Package-relative, not cwd-relative: uvicorn runs from backend/, pytest from wherever it
 # was invoked, and the container from /app. A bare "templates" string works in one of those.
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+logger = logging.getLogger("event-sync")
 
 router = APIRouter(tags=["pages"], include_in_schema=False)
 
@@ -116,12 +119,19 @@ def meeting_detail_page(
 
 @router.get("/stats", response_class=HTMLResponse)
 def stats_page(
-    request: Request, repository: Repository = Depends(get_repository)
+    request: Request,
+    synced: str | None = Query(default=None),
+    repository: Repository = Depends(get_repository),
 ) -> HTMLResponse:
     """The sync overview: the summary's numbers, joined to the records behind them.
 
     Reads meetings and stats from one snapshot rather than two calls, so a re-sync landing
     mid-render cannot produce a page whose tiles and tables describe different runs.
+
+    `?synced=` carries the outcome of a re-sync across the redirect. A query parameter rather
+    than session state: the service has no session, and inventing one to carry a single
+    sentence would be a lot of machinery. Unrecognised values render no banner, for the same
+    reason the filters are lenient — query strings arrive from bookmarks and hand-editing.
     """
     snapshot = repository.result if hasattr(repository, "result") else None
     meetings = snapshot.ordered_meetings if snapshot else repository.list_meetings()
@@ -136,8 +146,32 @@ def stats_page(
             "conflict_rows": _conflict_rows(meetings),
             "settings": get_settings(),
             "link_limit": FLAG_LINK_LIMIT,
+            "synced": synced if synced in {"ok", "failed"} else None,
         },
     )
+
+
+@router.post("/sync")
+def resync_page() -> RedirectResponse:
+    """Re-run the pipeline, then send the browser back to `/stats` with a fresh GET.
+
+    303 rather than rendering the overview here: a rendered POST response leaves the browser
+    holding a form submission, so a refresh re-posts and the back button offers to re-submit.
+    Pressing this twice is harmless — `run_sync` rebuilds from the JSON files and
+    `replace_all` swaps one reference — but a "resend this form?" prompt implies otherwise.
+    303 specifically, because 302 lets some clients preserve the method and re-POST.
+
+    A failing run redirects rather than 500s. `run_sync` builds the whole result before
+    anything is published, so the previous dataset is still being served; saying so on the
+    page is more useful than a stack trace that hides it.
+    """
+    try:
+        sync_now()
+    except Exception:
+        logger.exception("re-sync from the UI failed; the previous dataset is still published")
+        return RedirectResponse(url="/stats?synced=failed", status_code=303)
+
+    return RedirectResponse(url="/stats?synced=ok", status_code=303)
 
 
 FLAG_LINK_LIMIT = 6

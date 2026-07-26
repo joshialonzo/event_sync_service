@@ -12,6 +12,16 @@
 {% endmacro %}
 
 {% block content %}
+  {% if synced == 'ok' %}
+    <p class="notice notice-ok">
+      Re-synced — {{ summary.meetings_out }} meetings from {{ summary.records_in }} records.
+    </p>
+  {% elif synced %}
+    <p class="notice notice-failed">
+      Re-sync failed. The previous dataset is still being served — nothing was replaced.
+    </p>
+  {% endif %}
+
   <h1>Sync overview</h1>
   <p class="lede">
     Last run {{ summary.generated_at.strftime('%Y-%m-%d %H:%M %Z') }}
@@ -110,4 +120,13 @@
   {% else %}
     <p class="placeholder">No data-quality flags.</p>
   {% endif %}
+
+  <h2>Run again</h2>
+  <p class="lede">
+    Re-reads both source files and republishes the result. Safe to press repeatedly: each run
+    is built from the files rather than from the current store, so the counts above stay put.
+  </p>
+  <form class="resync" method="post" action="/sync">
+    <button type="submit">Re-sync now</button>
+  </form>
 {% endblock %}
