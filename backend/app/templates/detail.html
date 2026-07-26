@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% set origin_labels = {'both': 'Both sources', 'crm_only': 'CRM only', 'calendar_only': 'Calendar only'} %}
+{% set origin_classes = {'both': 'badge-both', 'crm_only': 'badge-crm', 'calendar_only': 'badge-calendar'} %}
+
+{% block title %}{{ meeting.title.value or meeting.id }} — Event Sync{% endblock %}
+
+{# Participants arrive as a list of dicts (the model dumped), and printing that raw puts a
+   wall of Python repr in the middle of the page. Names, with the organizer marked, is what
+   the reader actually wants. #}
+{% macro show_value(name, value) %}
+  {%- if value in (None, '', []) -%}
+    —
+  {%- elif name == 'participants' and value is iterable and value is not string -%}
+    {%- for person in value -%}
+      {{ person.display }}{% if person.is_organizer %} <span class="source">(organizer)</span>{% endif %}
+      {%- if not loop.last %}, {% endif -%}
+    {%- endfor -%}
+  {%- else -%}
+    {{ value }}
+  {%- endif -%}
+{% endmacro %}
+
+{% macro raw_panel(title, records, highlight, empty_message) %}
+  {# h3, not h2: these are subsections of "What each source said", and nesting a same-level
+     heading inside would both misdescribe the document outline and break anything that reads
+     the page by section. #}
+  <section class="panel">
+    <h3>{{ title }}</h3>
+    {% if not records %}
+      <p class="placeholder">{{ empty_message }}</p>
+    {% else %}
+      {% for record in records %}
+        <table>
+          <tbody>
+            {% for key, value in record.items() %}
+              <tr>
+                <th scope="row">{{ key }}</th>
+                <td {% if key in highlight %}class="conflict-value"{% endif %}>
+                  {{ value if value not in (None, '') else '—' }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endfor %}
+    {% endif %}
+  </section>
+{% endmacro %}
+
+{% block content %}
+  <p><a href="{{ url_for('meetings_page') }}">← All meetings</a></p>
+
+  <h1>{{ meeting.title.value or meeting.id }}</h1>
+  <p class="lede">
+    {{ meeting.event_date }}
+    {%- if meeting.start %} at {{ meeting.start.strftime('%H:%M %Z') }}{% endif %} ·
+    <span class="badge {{ origin_classes[meeting.origin.value] }}">
+      {{ origin_labels[meeting.origin.value] }}
+    </span>
+    {% if meeting.has_conflicts %}
+      <span class="badge badge-conflict">
+        Sources disagree on {{ meeting.conflicting_fields | join(', ') }}
+      </span>
+    {% endif %}
+  </p>
+
+  <h2>Merged record</h2>
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Field</th>
+        <th scope="col">Value</th>
+        <th scope="col">From</th>
+        <th scope="col">Other source said</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for name, field in meeting.provenance_fields.items() %}
+        <tr>
+          <th scope="row">{{ name.replace('_', ' ') }}</th>
+          <td {% if field.conflict %}class="conflict-value"{% endif %}>
+            {{ show_value(name, field.value) }}
+          </td>
+          <td class="source">{{ field.source.value if field.source else '—' }}</td>
+          <td>
+            {% for alternative in field.alternatives %}
+              <div class="alternative">
+                <span class="source">{{ alternative.source.value }}:</span>
+                {{ show_value(name, alternative.value) if alternative.value is not none else '(none)' }}
+              </div>
+            {% else %}
+              <span class="alternative">—</span>
+            {% endfor %}
+            {% if field.conflict_kind and field.conflict_kind.value != 'contradiction' %}
+              <span class="badge badge-info">{{ field.conflict_kind.value }}</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if meeting.match_evidence %}
+    <h2>Why these records were matched</h2>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Signal</th>
+          <th scope="col">Weight</th>
+          <th scope="col">Score</th>
+          <th scope="col">Contribution</th>
+          <th scope="col">Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for signal in meeting.match_evidence.signals %}
+          <tr>
+            <th scope="row">{{ signal.name }}</th>
+            <td>{{ '%.2f' | format(signal.weight) }}</td>
+            <td>{{ '%.2f' | format(signal.score) }}</td>
+            <td>{{ '%.3f' | format(signal.contribution) }}</td>
+            <td class="alternative">{{ signal.detail }}</td>
+          </tr>
+        {% endfor %}
+        <tr>
+          <th scope="row">total</th>
+          <td colspan="2"></td>
+          <td><strong>{{ '%.3f' | format(meeting.match_evidence.score) }}</strong></td>
+          <td>
+            <span class="badge {{ 'badge-warning' if meeting.match_evidence.is_low_confidence else 'badge-both' }}">
+              {{ meeting.match_evidence.confidence.value }} confidence
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  {% endif %}
+
+  <h2>What each source said</h2>
+  <div class="columns">
+    {{ raw_panel('CRM', meeting.raw_crm, conflict_keys['crm'], 'No CRM record — this meeting was never logged in the CRM.') }}
+    {{ raw_panel('Calendar', meeting.raw_calendar, conflict_keys['calendar'], 'No calendar record — this meeting was never booked.') }}
+  </div>
+
+  <h2>Data quality</h2>
+  {% if meeting.flags %}
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Severity</th>
+          <th scope="col">Code</th>
+          <th scope="col">Field</th>
+          <th scope="col">Raw value</th>
+          <th scope="col">Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for flag in meeting.flags %}
+          <tr>
+            <td><span class="badge badge-{{ flag.severity.value }}">{{ flag.severity.value }}</span></td>
+            <td>{{ flag.code.value }}</td>
+            <td>{{ flag.field }}</td>
+            <td>{{ flag.raw_value if flag.raw_value is not none else '—' }}</td>
+            <td class="alternative">{{ flag.message }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="placeholder">No data-quality flags on this meeting.</p>
+  {% endif %}
+{% endblock %}

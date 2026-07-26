@@ -26,6 +26,24 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 router = APIRouter(tags=["pages"], include_in_schema=False)
 
+# Which raw keys back each merged field. The two sources spell the same fact differently —
+# a CRM date plus a time against one calendar timestamp — so highlighting the records behind
+# a conflict needs this map. Kept beside the route that uses it rather than in the models:
+# it is a presentation concern, and nothing else needs to know it.
+SOURCE_FIELDS: dict[str, dict[str, tuple[str, ...]]] = {
+    "title": {"crm": ("subject",), "calendar": ("title",)},
+    "start_time": {"crm": ("meeting_date", "meeting_time"), "calendar": ("start_time",)},
+    "end_time": {"crm": (), "calendar": ("end_time",)},
+    "location": {"crm": ("location",), "calendar": ("location",)},
+    "participants": {"crm": ("client_name",), "calendar": ("attendees", "organizer")},
+    "client_name": {"crm": ("client_name",), "calendar": ()},
+    "client_company": {"crm": ("client_company",), "calendar": ()},
+    "owner_name": {"crm": ("relationship_owner",), "calendar": ("organizer",)},
+    "meeting_type": {"crm": ("meeting_type",), "calendar": ()},
+    "notes": {"crm": ("notes",), "calendar": ("description",)},
+    "status": {"crm": ("status",), "calendar": ("status",)},
+}
+
 
 @router.get("/", response_class=HTMLResponse)
 def meetings_page(
@@ -63,6 +81,52 @@ def meetings_page(
             "is_filtered": not filters.is_empty,
         },
     )
+
+
+@router.get("/meetings/{meeting_id}", response_class=HTMLResponse)
+def meeting_detail_page(
+    request: Request,
+    meeting_id: str,
+    repository: Repository = Depends(get_repository),
+) -> HTMLResponse:
+    """One meeting: the merged record, the evidence, both raw sides, and the flags.
+
+    An unknown id renders an HTML page rather than FastAPI's JSON error body — someone
+    following a stale link deserves a page with a way back, not `{"detail": ...}`.
+    """
+    meeting = repository.get_meeting(meeting_id)
+    if meeting is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="not_found.html",
+            context={"meeting_id": meeting_id},
+            status_code=404,
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="detail.html",
+        context={
+            "meeting": meeting,
+            "conflict_keys": _conflict_keys(meeting),
+        },
+    )
+
+
+def _conflict_keys(meeting) -> dict[str, set[str]]:
+    """The raw keys, per source, that a conflict on this meeting is about.
+
+    Lets the side-by-side panels highlight `location` on both sides for CRM-1002, and both
+    of the CRM's date/time keys for a start-time disagreement.
+    """
+    keys: dict[str, set[str]] = {"crm": set(), "calendar": set()}
+
+    for field_name in meeting.conflicting_fields:
+        mapping = SOURCE_FIELDS.get(field_name, {})
+        keys["crm"].update(mapping.get("crm", ()))
+        keys["calendar"].update(mapping.get("calendar", ()))
+
+    return keys
 
 
 def _filters_from_query(

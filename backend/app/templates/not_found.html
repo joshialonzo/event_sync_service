@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Not found — Event Sync{% endblock %}
+
+{% block content %}
+  <h1>No such meeting</h1>
+  <p class="lede">
+    Nothing here has the id <code>{{ meeting_id }}</code>.
+  </p>
+  <p class="panel placeholder">
+    Meeting ids are derived from their source record ids and change only if those records do,
+    so a link that worked before should still work.
+    <a href="{{ url_for('meetings_page') }}">Back to all meetings</a>.
+  </p>
+{% endblock %}
