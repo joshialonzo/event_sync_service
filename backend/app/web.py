@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from app.config import get_settings
 from app.dependencies import get_repository
 from app.models.filters import MeetingFilters, apply_filters
 from app.models.unified import Origin
@@ -111,6 +112,88 @@ def meeting_detail_page(
             "conflict_keys": _conflict_keys(meeting),
         },
     )
+
+
+@router.get("/stats", response_class=HTMLResponse)
+def stats_page(
+    request: Request, repository: Repository = Depends(get_repository)
+) -> HTMLResponse:
+    """The sync overview: the summary's numbers, joined to the records behind them.
+
+    Reads meetings and stats from one snapshot rather than two calls, so a re-sync landing
+    mid-render cannot produce a page whose tiles and tables describe different runs.
+    """
+    snapshot = repository.result if hasattr(repository, "result") else None
+    meetings = snapshot.ordered_meetings if snapshot else repository.list_meetings()
+    summary = snapshot.summary if snapshot else repository.get_stats()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="stats.html",
+        context={
+            "summary": summary,
+            "flag_rows": _flag_rows(meetings),
+            "conflict_rows": _conflict_rows(meetings),
+            "settings": get_settings(),
+            "link_limit": FLAG_LINK_LIMIT,
+        },
+    )
+
+
+FLAG_LINK_LIMIT = 6
+"""How many affected meetings to link per flag code.
+
+TIMEZONE_ASSUMED fires on all 24, and a row of 24 links buries the eight codes below it —
+each of which affects one or two records and is the part worth looking at.
+"""
+
+_SEVERITY_ORDER = {"error": 0, "warning": 1, "info": 2}
+
+
+def _flag_rows(meetings: list) -> list[dict]:
+    """One row per flag code: severity, count, and the meetings carrying it.
+
+    A count on its own is a claim; the links are what make it checkable. Joined here rather
+    than in the summary because "which meetings" is a presentation concern — the store
+    counts, the page points.
+    """
+    rows: dict[str, dict] = {}
+
+    for meeting in meetings:
+        for flag in meeting.flags:
+            row = rows.setdefault(
+                flag.code.value,
+                {
+                    "code": flag.code.value,
+                    "severity": flag.severity.value,
+                    "message": flag.message,
+                    "count": 0,
+                    "meeting_ids": [],
+                },
+            )
+            row["count"] += 1
+            if meeting.id not in row["meeting_ids"]:
+                row["meeting_ids"].append(meeting.id)
+
+    # Severity first: the single corrupt date must not sit below 40 timezone assumptions.
+    return sorted(
+        rows.values(),
+        key=lambda row: (_SEVERITY_ORDER.get(row["severity"], 9), -row["count"]),
+    )
+
+
+def _conflict_rows(meetings: list) -> list[dict]:
+    """Which meetings contradict each other, per field."""
+    rows: dict[str, list[str]] = {}
+
+    for meeting in meetings:
+        for field_name in meeting.conflicting_fields:
+            rows.setdefault(field_name, []).append(meeting.id)
+
+    return [
+        {"field": field_name, "meeting_ids": ids}
+        for field_name, ids in sorted(rows.items())
+    ]
 
 
 def _conflict_keys(meeting) -> dict[str, set[str]]:

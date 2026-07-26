@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Sync overview — Event Sync{% endblock %}
+
+{% macro meeting_links(ids) %}
+  {% for meeting_id in ids[:link_limit] %}
+    <a href="/meetings/{{ meeting_id }}">{{ meeting_id }}</a>{% if not loop.last %}, {% endif %}
+  {%- endfor %}
+  {%- if ids | length > link_limit %}
+    <span class="alternative">+{{ ids | length - link_limit }} more</span>
+  {%- endif %}
+{% endmacro %}
+
+{% block content %}
+  <h1>Sync overview</h1>
+  <p class="lede">
+    Last run {{ summary.generated_at.strftime('%Y-%m-%d %H:%M %Z') }}
+    from <code>{{ settings.data_dir }}</code>.
+  </p>
+
+  <div class="stat-grid">
+    <div class="stat">
+      <div class="value">{{ summary.records_in }}</div>
+      <div class="label">records in ({{ summary.crm_records_in }} CRM + {{ summary.calendar_records_in }} calendar)</div>
+    </div>
+    <div class="stat">
+      <div class="value">{{ summary.meetings_out }}</div>
+      <div class="label">meetings out</div>
+    </div>
+    <div class="stat">
+      <div class="value">{{ summary.matched_pairs }}</div>
+      <div class="label">matched across both sources</div>
+    </div>
+    <div class="stat">
+      <div class="value">{{ summary.crm_only }}</div>
+      <div class="label">CRM only — never booked</div>
+    </div>
+    <div class="stat">
+      <div class="value">{{ summary.calendar_only }}</div>
+      <div class="label">calendar only — never logged</div>
+    </div>
+    <div class="stat">
+      <div class="value">{{ summary.duplicates_collapsed }}</div>
+      <div class="label">duplicates collapsed</div>
+    </div>
+  </div>
+
+  <h2>Conflicts</h2>
+  <p class="lede">
+    {{ summary.conflicts_by_kind.get('contradiction', 0) }} genuine contradictions.
+    {{ summary.conflicts_by_kind.get('granularity', 0) }} differences of specificity and
+    {{ summary.conflicts_by_kind.get('absence', 0) }} absences are recorded but not flagged —
+    marking those too would put a badge on nearly every record.
+  </p>
+
+  {% if conflict_rows %}
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Field</th>
+          <th scope="col">Meetings</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in conflict_rows %}
+          <tr>
+            <th scope="row">{{ row.field.replace('_', ' ') }}</th>
+            <td>{{ meeting_links(row.meeting_ids) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="placeholder">The sources agree everywhere.</p>
+  {% endif %}
+
+  <h2>Data quality</h2>
+  <p class="lede">
+    {% if summary.low_confidence_matches %}
+      {{ summary.low_confidence_matches }} match(es) below the auto-match threshold.
+    {% else %}
+      No match relied on the low-confidence band — nothing here was merged on a hunch.
+    {% endif %}
+  </p>
+
+  {% if flag_rows %}
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Severity</th>
+          <th scope="col">Code</th>
+          <th scope="col">Count</th>
+          <th scope="col">Affected meetings</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in flag_rows %}
+          <tr>
+            <td><span class="badge badge-{{ row.severity }}">{{ row.severity }}</span></td>
+            <td>
+              {{ row.code }}
+              <div class="alternative">{{ row.message }}</div>
+            </td>
+            <td>{{ row.count }}</td>
+            <td>{{ meeting_links(row.meeting_ids) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="placeholder">No data-quality flags.</p>
+  {% endif %}
+{% endblock %}
