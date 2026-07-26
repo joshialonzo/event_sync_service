@@ -28,7 +28,7 @@ recorded in [docs/ai-collaboration/](docs/ai-collaboration/):
 ## Planned quick start
 
 ```bash
-docker compose up
+docker-compose up -d
 ```
 
 Everything on `http://localhost:8000` — the meeting list at `/`, the JSON API under `/api`, and the

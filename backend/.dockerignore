@@ -1,0 +1,17 @@
+# Sits in backend/ because that is the build context.
+#
+# venv/ is the one that matters: it is the largest thing in the directory and it holds
+# macOS-linked binaries that would be useless — and silently shadowing — inside a Linux
+# image. The rest is noise that would bust the build cache on every commit.
+
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# The image serves the app; the suite runs against a checkout.
+tests/
+pytest.ini
+
+.env
+.DS_Store

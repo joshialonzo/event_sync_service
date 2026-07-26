@@ -1,0 +1,22 @@
+# One service. Doc 03 chose server-rendered templates over a separate frontend, and this file
+# is where that decision is cashed in: no UI build, no second container, no CORS.
+#
+#   docker compose up --build   →   http://localhost:8000
+#
+# No top-level `version:` key — Compose v2 ignores it and warns that it is obsolete.
+
+services:
+  event-sync:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Read-only, and mounted rather than copied. The service only ever reads these two
+      # files, so :ro turns "the pipeline must not write to its inputs" from a claim in
+      # doc 02 into something the kernel enforces. Mounting also means a corrected source
+      # file plus a press of Re-sync is enough — no rebuild.
+      - ./data:/data:ro
+    environment:
+      # Matches the mount target. The image defaults to the same path, so `docker run` with
+      # an equivalent -v works too; this is here so the coupling is visible in one file.
+      DATA_DIR: /data
