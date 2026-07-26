@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Meetings — Event Sync{% endblock %}
+
+{% block content %}
+  <h1>Meetings</h1>
+  <p class="lede">
+    {{ meeting_count }} reconciled meeting{{ '' if meeting_count == 1 else 's' }}.
+  </p>
+  <p class="placeholder">The table lands in step 21.</p>
+{% endblock %}

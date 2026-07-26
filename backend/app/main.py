@@ -8,11 +8,14 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router as api_router
 from app.config import get_settings
 from app.dependencies import get_repository, sync_now
 from app.repository import Repository
+from app.web import STATIC_DIR
+from app.web import router as web_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(name)s: %(message)s")
 
@@ -34,7 +37,13 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Event Sync Service", version="0.1.0", lifespan=lifespan)
+
+# Mounted rather than routed: StaticFiles handles content types and conditional requests
+# without a handler of our own.
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
 app.include_router(api_router)
+app.include_router(web_router)
 
 
 @app.get("/api/health")
