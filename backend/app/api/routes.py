@@ -5,9 +5,9 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import Field
 
-from app.dependencies import get_repository
+from app.dependencies import get_repository, sync_now
 from app.models.filters import MeetingFilters, apply_filters
-from app.models.unified import Origin, UnifiedMeeting
+from app.models.unified import Origin, SyncRunSummary, UnifiedMeeting
 from app.repository import Repository
 
 router = APIRouter(prefix="/api", tags=["meetings"])
@@ -71,3 +71,34 @@ def get_meeting(
         raise HTTPException(status_code=404, detail=f"No meeting with id {meeting_id!r}")
 
     return meeting
+
+
+@router.get("/stats", response_model=SyncRunSummary)
+def get_stats(repository: Repository = Depends(get_repository)) -> SyncRunSummary:
+    """The five-second verification of a sync run.
+
+    Returns the summary the pipeline itself produced. Recounting from the meetings here
+    would let this endpoint disagree with the run that created them — the one thing it must
+    never do.
+    """
+    return repository.get_stats()
+
+
+@router.post("/sync", response_model=SyncRunSummary)
+def resync() -> SyncRunSummary:
+    """Re-run the pipeline and publish the result.
+
+    200 rather than 202: the work is finished by the time the response is written, and 202
+    would imply a background job to poll.
+
+    No lock. Two concurrent syncs would each build a complete result and one would win; the
+    loser's work is discarded and no reader sees a mixture, because publishing is a single
+    reference swap. A lock would add a failure mode to protect an outcome that is already
+    correct.
+
+    If the run raises — the data files moved, say — the exception becomes a 500 and the
+    **previous dataset stays published**, because `run_sync` builds the whole result before
+    anything is replaced. A service still serving its last good data beats one that empties
+    itself because a disk hiccuped.
+    """
+    return sync_now()

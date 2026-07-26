@@ -12,7 +12,7 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, computed_field, model_validator
 
 from app.models.normalized import DataQualityFlag, Source
 
@@ -250,8 +250,12 @@ class SyncRunSummary(BaseModel):
     flags_by_code: dict[str, int] = Field(default_factory=dict)
     flags_by_severity: dict[str, int] = Field(default_factory=dict)
 
+    @computed_field
     @property
     def records_in(self) -> int:
+        """Derived rather than stored — a total that can disagree with its parts is a bug
+        waiting to happen. `computed_field` is what puts it in the JSON payload and the
+        OpenAPI schema, so the API needs no separate response model to expose it."""
         return self.crm_records_in + self.calendar_records_in
 
 
