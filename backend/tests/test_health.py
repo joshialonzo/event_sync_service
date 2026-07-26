@@ -15,8 +15,17 @@ def test_health_reports_ok(client: TestClient) -> None:
 def test_health_reports_the_resolved_configuration(client: TestClient) -> None:
     payload = client.get("/api/health").json()
 
-    assert set(payload) == {"status", "data_dir", "timezone"}
+    assert set(payload) == {"status", "data_dir", "timezone", "meetings", "last_sync"}
     assert payload["timezone"] == "America/New_York"
+
+
+def test_health_reports_that_data_was_actually_loaded(client: TestClient) -> None:
+    """A process that booted but reconciled nothing is not healthy, and this is the first
+    endpoint a reviewer hits."""
+    payload = client.get("/api/health").json()
+
+    assert payload["meetings"] == 24
+    assert payload["last_sync"].startswith("20")
 
 
 def test_health_data_dir_exists_on_disk(client: TestClient) -> None:
