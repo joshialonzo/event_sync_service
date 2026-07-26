@@ -58,6 +58,7 @@ class FlagCode(str, Enum):
     MALFORMED_EMAIL = "MALFORMED_EMAIL"
     NON_EMAIL_ATTENDEE = "NON_EMAIL_ATTENDEE"
     INTERNAL_NO_CLIENT = "INTERNAL_NO_CLIENT"
+    PLACEHOLDER_CLIENT = "PLACEHOLDER_CLIENT"
     UNKNOWN_STATUS = "UNKNOWN_STATUS"
 
     @property
@@ -83,6 +84,7 @@ _SEVERITY_BY_CODE: dict[FlagCode, Severity] = {
     FlagCode.MALFORMED_EMAIL: Severity.WARNING,
     FlagCode.NON_EMAIL_ATTENDEE: Severity.INFO,
     FlagCode.INTERNAL_NO_CLIENT: Severity.INFO,
+    FlagCode.PLACEHOLDER_CLIENT: Severity.INFO,
     FlagCode.UNKNOWN_STATUS: Severity.WARNING,
 }
 
@@ -95,6 +97,7 @@ _DESCRIPTION_BY_CODE: dict[FlagCode, str] = {
     FlagCode.MALFORMED_EMAIL: "Email address required repair",
     FlagCode.NON_EMAIL_ATTENDEE: "Attendee is not an email address",
     FlagCode.INTERNAL_NO_CLIENT: "Internal meeting with no client (expected)",
+    FlagCode.PLACEHOLDER_CLIENT: "Client field holds a placeholder, not a single client",
     FlagCode.UNKNOWN_STATUS: "Status is outside both source vocabularies",
 }
 
