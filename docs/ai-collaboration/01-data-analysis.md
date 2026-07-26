@@ -69,10 +69,22 @@ than editing it. Both map to `CRM-1005`.
 (`2025-03-13T19:00:00Z`). Its CRM counterpart `CRM-1004` says 14:00 on the same date, and both agree
 the location is "DC Office - Main Conference Room".
 
-19:00 UTC = 14:00 America/New_York (EDT, UTC-4, in effect on 2025-03-13). **Inference:** every other
-timestamp in the Calendar file is naive local Eastern time, and `CAL-A4` is the one record serialized
-in UTC. Treating the `Z` literally would place these five hours apart and break a match that is
-otherwise unambiguous.
+19:00 UTC = **15:00** America/New_York (EDT, UTC-4, in effect since 2025-03-09). **Inference:** every
+other timestamp in the Calendar file is naive local Eastern time, and `CAL-A4` is the one record
+serialized in UTC. Treating the `Z` literally would read it as 19:00 local and place the two records
+five hours apart; converting places them one hour apart, which is what keeps the match.
+
+> **Correction (found in step 7, while writing the parser tests).** This section originally claimed
+> 19:00 UTC = 14:00 Eastern and therefore an exact time match with `CRM-1004`. That was arithmetically
+> wrong — it applied the EST offset (-5) to a date on which EDT (-4) was already in effect. The
+> correct conversion is 15:00, so `CRM-1004` (14:00) and `CAL-A4` (15:00) disagree by an hour.
+>
+> The decision is unchanged: converting is still right, because the alternative is a five-hour gap.
+> Two consequences are recorded rather than papered over: the pair scores ~0.75 on time proximity
+> instead of 1.0 (still far above the 0.70 auto-match threshold, since participants, title, and an
+> identical location carry it), and **`CRM-1004`/`CAL-A4` is a genuine one-hour time conflict** in
+> the merge — a second instance of the `CRM-1016` case, not the clean match this document first
+> described.
 
 ### E. Field conflicts between sources
 
@@ -108,7 +120,7 @@ Derived by hand from the above, to be used as the correctness fixture for the ma
 |---|---|---|
 | CRM-1001 | CAL-A1 | Clean exact match |
 | CRM-1002 | CAL-A2 | Modality conflict |
-| CRM-1004 | CAL-A4 | Requires timezone normalization |
+| CRM-1004 | CAL-A4 | Requires timezone normalization; leaves a 1h time conflict (see section D) |
 | CRM-1005 | CAL-A5 + CAL-A6 | Requires intra-source dedupe first |
 | CRM-1006 | CAL-A7 | Internal, no client |
 | CRM-1007 | CAL-A8 | CRM time is null; calendar fills it |

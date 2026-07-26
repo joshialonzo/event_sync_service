@@ -41,7 +41,7 @@ shape.
 | Concern | Rule |
 |---|---|
 | Dates | Try ISO first, then a small ordered list of tolerated patterns (`%m-%d/%Y` catches `CRM-1008`). Record `MALFORMED_DATE` with the original string whenever the fallback fires. Never guess a date that cannot be parsed. |
-| Timezones | All timestamps are coerced to `America/New_York`. Naive timestamps are *assumed* Eastern; `Z`-suffixed timestamps are converted from UTC. This is what makes `CAL-A4` match `CRM-1004`. The assumption is recorded as a `TIMEZONE_ASSUMED` flag on every naive record so it is visible rather than hidden. |
+| Timezones | All timestamps are coerced to `America/New_York`, DST-aware (the dataset straddles the 2025-03-09 change). Naive timestamps are *assumed* Eastern; `Z`-suffixed timestamps are converted from UTC. This is what brings `CAL-A4` within an hour of `CRM-1004` rather than five (see doc 01, section D — the conversion leaves a genuine 1h conflict). The assumption is recorded as a `TIMEZONE_ASSUMED` flag on every naive record so it is visible rather than hidden. |
 | Missing time | `CRM-1007` becomes a date-only event with `TIME_MISSING`. It still participates in matching, on the date signal alone. |
 | Emails | Repair `[at]` → `@`, flag `MALFORMED_EMAIL` (`CAL-A16`). Non-email attendee strings such as `"external-guests"` are kept as opaque participant labels with `NON_EMAIL_ATTENDEE` (`CAL-A20`), not discarded — "external guests attended" is real information. |
 | Status | Map both vocabularies onto one enum (`SCHEDULED`, `CONFIRMED`, `TENTATIVE`, `COMPLETED`, `CANCELLED`). Preserve each source's original string for display. |
